@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import Layout from "./Layout";
 import { toast } from "react-hot-toast";
 
+import Modal from "./components/Modal";
+import Skeleton from "./components/Skeleton";
+import PortfolioSection from "./components/PortfolioSection";
+
 const API = "http://localhost:8000";
 
 export default function Dashboard() {
@@ -16,6 +20,10 @@ export default function Dashboard() {
   const [inviteRole, setInviteRole] = useState("VIEWER");
 
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState(null);
 
   // =========================
   // LOAD DATA
@@ -34,11 +42,12 @@ export default function Dashboard() {
       } else {
         window.location.href = "/login";
       }
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to load dashboard");
     }
+
+    setInitialLoading(false);
   };
 
   useEffect(() => {
@@ -49,9 +58,8 @@ export default function Dashboard() {
   // SEND INVITE
   // =========================
   const sendInvite = async () => {
-
-    if (!inviteEmail) {
-      toast.error("Enter email");
+    if (!inviteEmail.trim()) {
+      toast.error("Email is required");
       return;
     }
 
@@ -77,7 +85,6 @@ export default function Dashboard() {
       } else {
         toast.error(data.error);
       }
-
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong");
@@ -87,13 +94,17 @@ export default function Dashboard() {
   };
 
   // =========================
-  // REVOKE INVITE
+  // MODAL HANDLING
   // =========================
-  const revokeInvite = async (id) => {
+  const openRevokeModal = (id) => {
+    setSelectedInvite(id);
+    setModalOpen(true);
+  };
 
+  const confirmRevoke = async () => {
     try {
       const formData = new FormData();
-      formData.append("invite_id", id);
+      formData.append("invite_id", selectedInvite);
 
       await fetch(`${API}/api/revoke-invite`, {
         method: "POST",
@@ -102,13 +113,15 @@ export default function Dashboard() {
       });
 
       toast.success("Invite revoked");
+      setModalOpen(false);
       load();
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to revoke invite");
     }
   };
+
+  const isFormValid = inviteEmail.trim().length > 0;
 
   // =========================
   // UI
@@ -116,99 +129,123 @@ export default function Dashboard() {
   return (
     <Layout userEmail={userEmail}>
 
-      {/* PAGE TITLE */}
-      <h1 className="text-2xl font-semibold mb-6 text-black dark:text-white">
+      <h1 className="text-2xl font-semibold mb-6">
         Dashboard
       </h1>
 
-      {/* ================= INVITE CARD ================= */}
-      <div className="bg-white dark:bg-gray-800 p-5 rounded shadow mb-6">
+      {/* ✅ PORTFOLIO SECTION */}
+      <PortfolioSection />
 
-        <h2 className="text-lg font-medium mb-4 text-black dark:text-white">
+      {/* ================= INVITE CARD ================= */}
+      <div className="bg-white dark:bg-gray-800 p-5 rounded shadow mb-6 animate-fadeIn">
+
+        <h2 className="text-lg font-medium mb-4">
           Invite User
         </h2>
 
         <div className="flex gap-3">
 
-          {/* EMAIL INPUT */}
+          {/* EMAIL */}
           <input
             type="email"
             placeholder="user@email.com"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             className="border p-2 rounded w-full
-            bg-white dark:bg-gray-700
-            text-black dark:text-white
-            border-gray-300 dark:border-gray-600"
+              bg-white dark:bg-gray-700
+              text-black dark:text-white
+              border-gray-300 dark:border-gray-600
+              focus:ring-2 focus:ring-blue-500 outline-none"
           />
 
-          {/* ROLE SELECT */}
+          {/* ROLE */}
           <select
             value={inviteRole}
             onChange={(e) => setInviteRole(e.target.value)}
             className="border p-2 rounded
-            bg-white dark:bg-gray-700
-            text-black dark:text-white
-            border-gray-300 dark:border-gray-600"
+              bg-white dark:bg-gray-700
+              text-black dark:text-white
+              border-gray-300 dark:border-gray-600"
           >
             <option value="VIEWER">Viewer</option>
             <option value="ADMIN">Admin</option>
           </select>
 
-          {/* SEND BUTTON */}
+          {/* BUTTON */}
           <button
             onClick={sendInvite}
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            disabled={!isFormValid || loading}
+            className={`px-4 py-2 rounded text-white transition
+              ${loading || !isFormValid
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 active:scale-95"}`}
           >
-            {loading ? "..." : "Send"}
+            {loading ? "Sending..." : "Send"}
           </button>
 
         </div>
 
       </div>
 
-      {/* ================= INVITES LIST ================= */}
-      <div className="bg-white dark:bg-gray-800 p-5 rounded shadow">
+      {/* ================= INVITES ================= */}
+      <div className="bg-white dark:bg-gray-800 p-5 rounded shadow animate-fadeIn">
 
-        <h2 className="text-lg font-medium mb-4 text-black dark:text-white">
+        <h2 className="text-lg font-medium mb-4">
           Invites
         </h2>
 
-        {invites.length === 0 && (
-          <p className="text-gray-500 dark:text-gray-400">
-            No invites yet
-          </p>
+        {initialLoading ? (
+          <Skeleton lines={4} />
+        ) : invites.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            No invites yet 📭
+          </div>
+        ) : (
+          invites.map((i) => (
+            <div
+              key={i.id}
+              className="flex justify-between items-center border-b py-3
+              hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            >
+
+              <div>
+                <div className="font-medium">
+                  {i.email}
+                </div>
+
+                <div className="text-sm mt-1 flex gap-2">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                    {i.role}
+                  </span>
+
+                  <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">
+                    {i.status}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => openRevokeModal(i.id)}
+                className="text-red-600 text-sm hover:underline"
+              >
+                Revoke
+              </button>
+
+            </div>
+          ))
         )}
 
-        {invites.map((i) => (
-          <div
-            key={i.id}
-            className="flex justify-between items-center border-b
-            border-gray-200 dark:border-gray-700 py-2"
-          >
-
-            <div>
-              <span className="font-medium text-black dark:text-white">
-                {i.email}
-              </span>
-
-              <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                {i.role} • {i.status}
-              </span>
-            </div>
-
-            <button
-              onClick={() => revokeInvite(i.id)}
-              className="text-red-600 text-sm hover:underline"
-            >
-              Revoke
-            </button>
-
-          </div>
-        ))}
-
       </div>
+
+      {/* ✅ MODAL */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={confirmRevoke}
+        title="Revoke Invite"
+      >
+        Are you sure you want to revoke this invite?
+      </Modal>
 
     </Layout>
   );

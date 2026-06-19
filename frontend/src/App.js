@@ -9,24 +9,38 @@ export default function App() {
   return (
     <BrowserRouter>
 
-      {/* ✅ Toast notifications */}
+      {/* ✅ GLOBAL TOAST SYSTEM */}
       <Toaster
         position="top-right"
+        reverseOrder={false}
         toastOptions={{
           duration: 3000,
           style: {
-            background: "#333",
+            background: "#1f2937", // dark gray (Tailwind gray-800)
             color: "#fff",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            fontSize: "14px"
           },
+          success: {
+            style: {
+              background: "#16a34a", // green
+            }
+          },
+          error: {
+            style: {
+              background: "#dc2626", // red
+            }
+          }
         }}
       />
 
       <Routes>
 
-        {/* ✅ Public route */}
+        {/* ✅ PUBLIC */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ✅ Protected routes */}
+        {/* ✅ APP */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/users" element={<Users />} />
 

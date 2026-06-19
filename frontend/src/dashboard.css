@@ -1,0 +1,82 @@
+.dashboard {
+  padding: 30px;
+  background: #f5f7fb;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn.primary {
+  background: #4f46e5;
+  color: white;
+}
+
+.btn.primary:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.btn.danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+/* TABLE */
+.table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table th, .table td {
+  padding: 14px;
+}
+
+.table tr:hover {
+  background: #f1f5f9;
+}
+
+/* BADGES */
+.badge {
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* STATES */
+.loading {
+  padding: 20px;
+}
+
+.empty {
+  text-align: center;
+  padding: 50px;
+}

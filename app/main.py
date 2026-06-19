@@ -21,6 +21,7 @@ from .models import User
 from .models_account import Account
 from .models_account_user import AccountUser
 from .models_invitation import Invitation
+from .models_portfolio import Portfolio
 
 # =========================
 # APP
@@ -46,10 +47,6 @@ app.add_middleware(
     same_site="lax"
 )
 
-# =========================
-# DATABASE
-# =========================
-Base.metadata.create_all(bind=engine)
 
 # =========================
 # PASSWORD (NEW ✅)
@@ -415,3 +412,104 @@ def dashboard(request: Request):
             for i in invites
         ]
     }
+# =========================
+# PORTFOLIOS ✅ FINAL FIX
+# =========================
+
+# CREATE
+@app.post("/api/portfolios")
+def create_portfolio(request: Request, name: str = Form(...)):
+    db = SessionLocal()
+    try:
+        email = request.session.get("user")
+
+        if not email:
+            return {"error": "Not authenticated"}
+
+        user = get_user(db, email)
+        link = get_link(db, user.id)
+
+        portfolio = Portfolio(
+            name=name,
+            account_id=link.account_id,
+            status="active"
+        )
+
+        db.add(portfolio)
+        db.commit()
+        db.refresh(portfolio)
+
+        return {"success": True}
+
+    finally:
+        db.close()
+
+
+# GET ✅
+@app.get("/api/portfolios")
+def get_portfolios(request: Request):
+    db = SessionLocal()
+    try:
+        email = request.session.get("user")
+
+        if not email:
+            return {"error": "Not authenticated"}
+
+        user = get_user(db, email)
+        link = get_link(db, user.id)
+
+        portfolios = db.query(Portfolio).filter(
+            Portfolio.account_id == link.account_id
+        ).all()
+
+        return {
+            "portfolios": [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "status": p.status
+                }
+                for p in portfolios
+            ]
+        }
+
+    finally:
+        db.close()
+
+
+# UPDATE
+@app.post("/api/portfolios/update")
+def update_portfolio(id: int = Form(...), name: str = Form(...)):
+    db = SessionLocal()
+    try:
+        p = db.query(Portfolio).filter_by(id=id).first()
+
+        if p:
+            p.name = name
+            db.commit()
+
+        return {"success": True}
+
+    finally:
+        db.close()
+
+
+# DELETE
+@app.post("/api/portfolios/delete")
+def delete_portfolio(id: int = Form(...)):
+    db = SessionLocal()
+    try:
+        p = db.query(Portfolio).filter_by(id=id).first()
+
+        if p:
+            db.delete(p)
+            db.commit()
+
+        return {"success": True}
+
+    finally:
+        db.close()
+# =========================
+# DATABASE
+# =========================
+Base.metadata.create_all(bind=engine)
